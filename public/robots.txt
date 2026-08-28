@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /services
+Disallow: /topup
+Disallow: /mail
+Disallow: /banner
+Disallow: /referrals
+Disallow: /live-otp
+Disallow: /history
+Disallow: /settings
+Disallow: /admin
+
+Sitemap: https://temp-numb.vercel.app/sitemap.xml
