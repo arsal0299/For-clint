@@ -76,8 +76,9 @@ export const npApi = {
   services: (server?: number) => request("np", { body: { endpoint: "services", server } }),
   countries: (service: string, server?: number) =>
     request("np", { body: { endpoint: "countries", service, server } }),
-  requestNumber: (params: { service: string; country?: string; server?: number; rid?: string; quantity?: number; countryId?: number }) =>
+  requestNumber: (params: { service: string; country?: string; server?: number; rid?: string; quantity?: number; countryId?: number; tierNumber?: number }) =>
     request("np", { body: { endpoint: "request-number", ...params } }),
+  liveOtp: (limit?: number) => request("np", { body: { endpoint: "live-otp", limit } }),
   checkOtp: (requestId: number | string) =>
     request("np", { body: { endpoint: "check-otp", requestId } }),
   releaseNumber: (requestId: number | string) =>
@@ -109,6 +110,7 @@ export const settingsApi = {
 /* ── Admin (all through one function) ────────────────────────────── */
 export const adminApi = {
   stats: () => request("admin", { body: { endpoint: "stats" } }),
+  providerBalance: () => request("admin", { body: { endpoint: "provider-balance" } }),
   users: (q?: string, page = 1, pageSize = 20) =>
     request("admin", { body: { endpoint: "users", q, page, pageSize } }),
   userDetail: (id: string) =>
