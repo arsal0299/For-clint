@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Settings as SettingsIcon, Image, CreditCard, Tag, KeyRound, Save, Loader2, Trash2, Plus, Wrench, Sparkles, Banknote } from "lucide-react";
+import { Settings as SettingsIcon, Image, CreditCard, Tag, KeyRound, Save, Loader2, Trash2, Plus, Wrench, Sparkles, Banknote, Wallet } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { adminApi } from "../../lib/api";
 import { useToast } from "../../context/ToastContext";
@@ -134,6 +134,21 @@ export function AdminSettings() {
       toast("Settings saved.", "success");
     } catch (e: any) { toast(e.message, "error"); } finally { setSaving(""); }
   };
+
+  const [providerBalance, setProviderBalance] = useState<{ wallet_balance: number; referral_balance: number; held: number; available: number } | null>(null);
+  const [checkingBalance, setCheckingBalance] = useState(false);
+  const checkBalance = async () => {
+    setCheckingBalance(true);
+    setProviderBalance(null);
+    try {
+      const res = await adminApi.providerBalance();
+      setProviderBalance(res.balance);
+    } catch (e: any) {
+      toast(e.message || "Could not reach the mother site.", "error");
+    } finally {
+      setCheckingBalance(false);
+    }
+  };
   const savePayment = async () => {
     setSaving("payment");
     try {
@@ -227,6 +242,36 @@ export function AdminSettings() {
             <Field label="Site name"><input className="input" value={site.site_name} onChange={(e) => setSite({ ...site, site_name: e.target.value })} /></Field>
             <Field label="Mother API key (reseller key from your mother site's API Keys page)"><input className="input font-mono" value={site.mother_api_key} onChange={(e) => setSite({ ...site, mother_api_key: e.target.value })} placeholder="nma_live_... — stored server-side only" /></Field>
             <Field label="Mother API base URL"><input className="input" value={site.mother_api_base_url} onChange={(e) => setSite({ ...site, mother_api_base_url: e.target.value })} placeholder="https://your-mother-site.com" /></Field>
+
+            <div className="pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+              <button type="button" onClick={checkBalance} disabled={checkingBalance} className="btn btn-outline btn-sm">
+                {checkingBalance ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+                {checkingBalance ? "Checking…" : "Check mother site balance"}
+              </button>
+              <p className="text-xs mt-1.5" style={{ color: "var(--fg-dim)" }}>
+                Save your Mother API key above first — this checks how much balance is left on your mother-site account (what actually funds every order you sell).
+              </p>
+              {providerBalance && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                  <div className="card p-3">
+                    <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "var(--fg-dim)" }}>Wallet</p>
+                    <p className="font-mono font-bold" style={{ color: "var(--fg)" }}>{rs(providerBalance.wallet_balance)}</p>
+                  </div>
+                  <div className="card p-3">
+                    <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "var(--fg-dim)" }}>Referral</p>
+                    <p className="font-mono font-bold" style={{ color: "var(--fg)" }}>{rs(providerBalance.referral_balance)}</p>
+                  </div>
+                  <div className="card p-3">
+                    <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: "var(--fg-dim)" }}>Held</p>
+                    <p className="font-mono font-bold" style={{ color: "var(--fg)" }}>{rs(providerBalance.held)}</p>
+                  </div>
+                  <div className="card p-3" style={{ borderColor: "rgba(52,211,153,0.3)" }}>
+                    <p className="text-[11px] uppercase tracking-wider font-semibold text-brand-400">Available</p>
+                    <p className="font-mono font-bold text-brand-400">{rs(providerBalance.available)}</p>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Default price / number (Rs)"><input type="number" step="0.01" className="input" value={site.price_per_number} onChange={(e) => setSite({ ...site, price_per_number: e.target.value })} /></Field>
               <Field label="Hold time (minutes)"><input type="number" min="1" className="input" value={site.number_hold_minutes} onChange={(e) => setSite({ ...site, number_hold_minutes: e.target.value })} /></Field>
