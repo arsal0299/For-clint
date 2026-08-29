@@ -32,6 +32,8 @@ export async function handler(event) {
         return await releaseNumber(client, profile, params);
       case "check-otp":
         return await checkOtp(client, profile, params);
+      case "live-otp":
+        return await liveOtp(client, params);
       case "mail-generate":
         return await mailGenerate(client, profile, params);
       case "mail-messages":
@@ -70,7 +72,7 @@ async function getCountries(client, { service, server }) {
 
 /* ── request a number (holds local wallet balance, buys via mother) ─── */
 async function requestNumber(client, profile, params) {
-  const { service, country, server, quantity, countryId } = params;
+  const { service, country, server, quantity, countryId, tierNumber } = params;
   const srv = Number(server) || 1;
   const qty = Math.min(Math.max(Number(quantity) || 1, 1), 5);
 
@@ -87,7 +89,7 @@ async function requestNumber(client, profile, params) {
 
   for (let i = 0; i < qty; i++) {
     try {
-      const row = await requestSingleNumber(client, profile, { service, country, server: srv, price, countryId });
+      const row = await requestSingleNumber(client, profile, { service, country, server: srv, price, countryId, tierNumber });
       results.push(row);
     } catch (e) {
       failures.push(e.message || "Could not get a number.");
@@ -100,7 +102,7 @@ async function requestNumber(client, profile, params) {
   return json({ success: true, numbers: results, requested: qty, obtained: results.length, failures });
 }
 
-async function requestSingleNumber(client, profile, { service, country, server, price, countryId }) {
+async function requestSingleNumber(client, profile, { service, country, server, price, countryId, tierNumber }) {
   await client.rpc("ensure_wallet_funds_from_referral", { p_user_id: profile.id, p_needed: price });
 
   const { data: held, error: holdErr } = await client.rpc("hold_wallet", {
@@ -111,7 +113,7 @@ async function requestSingleNumber(client, profile, { service, country, server, 
 
   let motherResp;
   try {
-    motherResp = await Mother.requestNumber(client, { service, country, server, countryId });
+    motherResp = await Mother.requestNumber(client, { service, country, server, countryId, tierNumber });
   } catch (e) {
     await client.rpc("release_hold", { p_user_id: profile.id, p_amount: price });
     throw e;
@@ -222,6 +224,12 @@ async function checkOtp(client, profile, { requestId }) {
   }
 
   return json({ otp: null });
+}
+
+/* ── combined live OTP feed (server 1 + 2), via mother ───────────── */
+async function liveOtp(client, { limit }) {
+  const resp = await Mother.liveOtp(client, limit);
+  return json({ feed: resp.feed || [] });
 }
 
 /* ── withdrawals ──────────────────────────────────────────────────── */
