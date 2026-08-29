@@ -51,13 +51,15 @@ function unwrap(result) {
 }
 
 export const Mother = {
+  balance: (c) => motherCall(c, "GET", "balance").then(unwrap),
   services: (c, server) => motherCall(c, "GET", "services", { server }).then(unwrap),
   countries: (c, service, server) => motherCall(c, "GET", "countries", { service, server }).then(unwrap),
-  requestNumber: (c, { service, country, server, quantity, countryId }) =>
-    motherCall(c, "POST", "request_number", { service, country, server, quantity, countryId }).then(unwrap),
+  requestNumber: (c, { service, country, server, quantity, countryId, tierNumber }) =>
+    motherCall(c, "POST", "request_number", { service, country, server, quantity, countryId, tierNumber }).then(unwrap),
   checkOtp: (c, id) => motherCall(c, "GET", "check_otp", { id }).then(unwrap),
   releaseNumber: (c, id) => motherCall(c, "POST", "release_number", { id }).then(unwrap),
   myNumbers: (c) => motherCall(c, "GET", "my_numbers").then(unwrap),
+  liveOtp: (c, limit) => motherCall(c, "GET", "live_otp", { limit }).then(unwrap),
   mailGenerate: (c, username) => motherCall(c, "POST", "mail/generate", { username }).then(unwrap),
   mailMessages: (c, address) => motherCall(c, "GET", "mail/messages", { address }).then(unwrap),
   smmServices: (c) => motherCall(c, "GET", "smm/services").then(unwrap),
