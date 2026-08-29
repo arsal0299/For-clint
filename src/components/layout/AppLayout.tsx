@@ -33,6 +33,7 @@ import { Logo } from "../Logo";
 const NAV = [
   { to: "/overview", label: "Dashboard", icon: LayoutDashboard },
   { to: "/dashboard", label: "Get Number", icon: Smartphone },
+  { to: "/live-otp", label: "Live OTP", icon: Radio },
   { to: "/services", label: "Services", icon: ShoppingBag },
   { to: "/referrals", label: "Refer & Earn", icon: Gift },
   { to: "/withdrawals", label: "Withdrawals", icon: Banknote },
