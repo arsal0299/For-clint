@@ -30,11 +30,17 @@ interface ServiceOpt {
   name: string;
   price?: number;
 }
+interface Tier {
+  tierNumber: number;
+  price: number;
+  label?: string;
+}
 interface CountryOpt {
   code: string;
   name: string;
   countryId?: number;
   price?: number;
+  tiers?: Tier[];
 }
 
 // All servers are fulfilled through the mother site's API — this dashboard
@@ -57,6 +63,7 @@ export function Dashboard() {
 
   const [service, setService] = useState("");
   const [country, setCountry] = useState<CountryOpt | null>(null);
+  const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [requesting, setRequesting] = useState(false);
 
@@ -90,6 +97,7 @@ export function Dashboard() {
         name: c.name ?? c.code,
         countryId: c.countryId,
         price: c.price != null ? Number(c.price) : undefined,
+        tiers: Array.isArray(c.tiers) && c.tiers.length ? c.tiers : undefined,
       }));
       setCountries(list);
     } catch {
@@ -119,6 +127,7 @@ export function Dashboard() {
     setServer(s);
     setService("");
     setCountry(null);
+    setSelectedTier(null);
     setCountries([]);
     loadServices(s);
   };
@@ -126,6 +135,7 @@ export function Dashboard() {
   const onServiceChange = async (val: string) => {
     setService(val);
     setCountry(null);
+    setSelectedTier(null);
     setCountries([]);
     if (!val) return;
     loadCountries(val, server);
@@ -161,7 +171,7 @@ export function Dashboard() {
     return () => clearInterval(i);
   }, [numbers, loadNumbers, refreshProfile, toast]);
 
-  const price = country?.price ?? services.find((s) => s.code === service)?.price ?? Number(settings.price_per_number || 5);
+  const price = selectedTier?.price ?? country?.price ?? services.find((s) => s.code === service)?.price ?? Number(settings.price_per_number || 5);
   const totalPrice = price * quantity;
 
   const requestNumber = async () => {
@@ -176,6 +186,7 @@ export function Dashboard() {
         server,
         quantity,
         countryId: country.countryId,
+        tierNumber: selectedTier?.tierNumber,
       });
       const obtained = res.obtained ?? 1;
       if (obtained > 0) {
@@ -188,6 +199,7 @@ export function Dashboard() {
       setService("");
       setCountry(null);
       setCountries([]);
+      setSelectedTier(null);
       setQuantity(1);
     } catch (e: any) {
       toast(e.message || "Could not request a number.", "error");
@@ -308,7 +320,7 @@ export function Dashboard() {
               <select
                 className="input"
                 value={country?.code ?? ""}
-                onChange={(e) => setCountry(countries.find((c) => c.code === e.target.value) ?? null)}
+                onChange={(e) => { const c = countries.find((c) => c.code === e.target.value) ?? null; setCountry(c); setSelectedTier(c?.tiers?.[0] ?? null); }}
                 disabled={!service || loadingCountries || requesting}
               >
                 <option value="">{!service ? "Select a service first" : loadingCountries ? "Loading…" : "Select a country"}</option>
@@ -320,6 +332,32 @@ export function Dashboard() {
               </select>
             </div>
           </div>
+
+          {country?.tiers && country.tiers.length > 0 && (
+            <div className="mt-4">
+              <label className="label">Pick a tier</label>
+              <div className="flex flex-wrap gap-2">
+                {country.tiers.map((t) => (
+                  <button
+                    key={t.tierNumber}
+                    type="button"
+                    onClick={() => setSelectedTier(t)}
+                    className="px-3.5 py-2 rounded-xl text-sm font-medium transition"
+                    style={{
+                      background: selectedTier?.tierNumber === t.tierNumber ? "var(--color-brand-400)" : "var(--panel)",
+                      color: selectedTier?.tierNumber === t.tierNumber ? "#04120c" : "var(--fg-muted)",
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    {t.label ? `${t.label} — ` : `Tier ${t.tierNumber} — `}{rs(t.price)}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs mt-1.5" style={{ color: "var(--fg-dim)" }}>
+                Cheaper tiers can sell out first — if that happens, pick another tier and try again.
+              </p>
+            </div>
+          )}
 
           <div className="mt-4">
             <label className="label">Quantity</label>
