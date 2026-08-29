@@ -1,4 +1,4 @@
-import { adminClient, json, error, body, requireAdmin, logAdminAction, getAllSettings, withVercel } from "./_lib/shared.js";
+import { adminClient, json, error, body, requireAdmin, logAdminAction, getAllSettings, Mother, withVercel } from "./_lib/shared.js";
 
 /**
  * All admin operations in one file (Vercel Hobby plan caps a deployment at
@@ -8,7 +8,7 @@ import { adminClient, json, error, body, requireAdmin, logAdminAction, getAllSet
  * POST /api/admin  { endpoint: "...", ...params }
  * endpoint: "users" | "user-detail" | "user-action" | "payments" |
  *           "review-payment" | "service-prices" | "settings" | "stats" |
- *           "audit-log"
+ *           "audit-log" | "provider-balance"
  */
 export async function handler(event) {
   if (event.httpMethod === "OPTIONS") return json({});
@@ -20,6 +20,8 @@ export async function handler(event) {
 
   try {
     switch (params.endpoint) {
+      case "provider-balance":
+        return await providerBalance(c);
       case "users":
         return await getUsers(c, params);
       case "user-detail":
@@ -57,6 +59,16 @@ export async function handler(event) {
 }
 
 /* ── users ─────────────────────────────────────────────────────── */
+/* ── check the mother site's balance for our master API key ─────────── */
+async function providerBalance(client) {
+  try {
+    const resp = await Mother.balance(client);
+    return json({ balance: resp.balance });
+  } catch (e) {
+    return error(e.message || "Could not reach the mother site.", 502);
+  }
+}
+
 async function getUsers(c, { q, page, pageSize }) {
   const size = Math.min(Math.max(Number(pageSize) || 20, 1), 5000);
   const p = Math.max(Number(page) || 1, 1);
